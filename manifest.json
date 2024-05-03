@@ -1,0 +1,10 @@
+[
+    {
+      "name": "Pedro - Dancing Raccoon",
+      "description": "Replaces the album art with a raccoon vibing to the beat.",
+      "preview": "marketplace/preview.gif",
+      "main": "marketplace/dancing-raccoon.js",
+      "readme": "README.md"
+    }
+]
+
