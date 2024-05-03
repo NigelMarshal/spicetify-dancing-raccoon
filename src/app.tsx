@@ -1,5 +1,3 @@
-let audioData = null;
-
 // Fetch audio data from Spotify
 async function getSpotifyAudioData(
   delayBetweenRetries = 200,
@@ -33,66 +31,76 @@ async function calcPlaybackRate(trackData) {
     return 1;
   }
 }
-// Keep searching for DOM El for video injection
-async function findEl(
-  query,
-  maxAttempts = 40,
-  pauseDuration = 80,
-  onSuccess,
-  onFailure
-) {
-  for (let count = 0; count < maxAttempts; count++) {
-    const element = document.querySelector(query);
-    if (element) {
-      onSuccess(element);
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, pauseDuration));
-  }
-  onFailure(
-    `Failed to locate element '${query}' after ${maxAttempts} attempts`
-  );
-}
 
-// Inject video element into the SpotifyUI
-async function initializeVideoInjection() {
-  const handleSuccess = (element) => {
-    console.info("Element found, proceeding with video injection.");
-    pedroPedro(element);
-  };
-
-  const handleFailure = (errorMessage) => {
-    console.error(errorMessage);
-  };
-
-  // Video will be inserted into the right side of the now playing widget
-  await findEl(
-    ".main-nowPlayingWidget-nowPlaying",
-    50,
-    100,
-    handleSuccess,
-    handleFailure
-  );
-}
-
-// Dance lil raccoon, dance!
-function pedroPedro(targetElement) {
+// Find and replace the album art with a video
+async function setupVideoInjection() {
+  const albumArtContainerQuery = ".main-nowPlayingWidget-coverArt";
   const videoURL =
     "https://github.com/NigelMarshal/temp-host/raw/main/pedro-raccoon.webm";
+
+  try {
+    const albumArtContainer = await findEl(albumArtContainerQuery, 50, 100);
+    replaceWithVideo(albumArtContainer, videoURL);
+  } catch (error) {
+    console.error("Video injection failed:", error);
+  }
+}
+
+// Replace the album art element with a video element
+function replaceWithVideo(container, videoSrc) {
+  container.innerHTML = "";
+  container.style.backgroundColor = "black";
+  container.style.width = "100px";
+  container.style.height = "80px";
+
   const videoElement = document.createElement("video");
   videoElement.id = "dancing-raccoon";
   videoElement.loop = true;
   videoElement.muted = true;
-  videoElement.style.cssText = "width: 80px; height: 80px;";
-  videoElement.src = videoURL;
+  videoElement.style.cssText = "width: 100%; height: 85px;";
+  videoElement.src = videoSrc;
 
-  targetElement.appendChild(videoElement);
+  container.appendChild(videoElement);
+  handleVideoPlayback(videoElement);
+}
+
+// Locate an element with retries
+async function findEl(selector, maxAttempts, pauseDuration) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const element = document.querySelector(selector);
+    if (element) return element;
+    await new Promise((resolve) => setTimeout(resolve, pauseDuration));
+  }
+  throw new Error(
+    `Element ${selector} not found after ${maxAttempts} attempts.`
+  );
+}
+
+// Handle playback based on player state
+function handleVideoPlayback(videoElement) {
+  function togglePlayPause() {
+    Spicetify.Player.isPlaying() ? videoElement.play() : videoElement.pause();
+  }
+
+  // Handle playback rate adjustment
+  async function adjustPlaybackRate() {
+    const audioData = await getSpotifyAudioData();
+    videoElement.playbackRate = await calcPlaybackRate(audioData);
+    togglePlayPause();
+  }
+
+  togglePlayPause();
+
+  // Setup event listeners for play/pause and song changes
+  Spicetify.Player.removeEventListener("onplaypause", togglePlayPause);
+  Spicetify.Player.addEventListener("onplaypause", togglePlayPause);
+  Spicetify.Player.removeEventListener("songchange", adjustPlaybackRate);
+  Spicetify.Player.addEventListener("songchange", adjustPlaybackRate);
 }
 
 // Main function to execute when script is loaded
 async function main() {
-  console.log("Video loaded");
-  await initializeVideoInjection();
+  await setupVideoInjection();
 }
 
 export default main;
