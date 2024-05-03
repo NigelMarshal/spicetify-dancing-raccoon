@@ -36,7 +36,7 @@ async function calcPlaybackRate(trackData) {
 async function setupVideoInjection() {
   const albumArtContainerQuery = ".main-nowPlayingWidget-coverArt";
   const videoURL =
-    "https://github.com/NigelMarshal/temp-host/raw/main/pedro-raccoon.webm";
+    "https://github.com/NigelMarshal/spicetify-dancing-raccoon/raw/main/src/video/pedro-raccoon.webm";
 
   try {
     const albumArtContainer = await findEl(albumArtContainerQuery, 50, 100);
